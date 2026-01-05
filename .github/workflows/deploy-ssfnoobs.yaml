@@ -33,8 +33,15 @@ jobs:
           sf sgd source delta --to HEAD --from HEAD~1 --output-dir changed-sources --generate-delta --source-dir force-app
           echo "[INFO] Diff generated"
 
+      - name: 'Validate deployment secrets'
+        run: |
+          test -n "${{ secrets.DEPLOYMENT_USER_SECRET }}" || (echo "Missing DEPLOYMENT_USER_SECRET" && exit 1)
+          test -n "${{ secrets.CONSUMER_KEY }}" || (echo "Missing CONSUMER_KEY" && exit 1)
+          test -n "${{ secrets.JWT_SERVER_KEY }}" || (echo "Missing JWT_SERVER_KEY" && exit 1)
+          test -n "${{ vars.INSTANCE_URL }}" || (echo "Missing INSTANCE_URL" && exit 1)
+
       - name: 'Deploy to environment with running all local tests'
         run: |
           echo "${{ secrets.JWT_SERVER_KEY }}" > server.key
-          sf org login jwt --username ${{ secrets.DEPLOYMENT_USER_SECRET }} --jwt-key-file server.key --client-id ${{ secrets.CONSUMER_KEY }} --instance-url ${{ vars.INSTANCE_URL }} --set-default
+          sf org login jwt --username "${{ secrets.DEPLOYMENT_USER_SECRET }}" --jwt-key-file server.key --client-id "${{ secrets.CONSUMER_KEY }}" --instance-url "${{ vars.INSTANCE_URL }}" --set-default
           sf project deploy start --source-dir changed-sources/force-app --test-level RunLocalTests
